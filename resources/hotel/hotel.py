@@ -28,18 +28,19 @@ class Hotel(Resource):
 
     # Find by id
     def get(self, hotel_id):
-        for hotel in hoteis:
-            if hotel["hotel_id"] == hotel_id:
-                return hotel
+        hotel = HotelModel.find_hotel(hotel_id)
+        if hotel:
+            return hotel.json()
         return ("message: Hotel não encontrado!"), 404
 
     # Create Hotel
     def post(self, hotel_id):
+        if HotelModel.find_hotel(hotel_id):
+            return {"messase": "O Hotel_id '{}' já existe, insira outro".format(hotel_id)}, 400
         dados = Hotel.argumentos.parse_args()
-        hotel_object = HotelModel(hotel_id, **dados)
-        novo_hotel = hotel_object.json()
-        hoteis.append(novo_hotel)
-        return novo_hotel, 200
+        hotel = HotelModel(hotel_id, **dados)
+        hotel.save_hotel()
+        return hotel.json()
 
     def find_hotel(hotel_id):
         for hotel in hoteis:
@@ -49,15 +50,16 @@ class Hotel(Resource):
 
     def put(self, hotel_id):
         dados = Hotel.argumentos.parse_args()
-        hotel_object = HotelModel(hotel_id, **dados)
-        novo_hotel = hotel_object.json()
-        hotel = Hotel.find_hotel(hotel_id)
-        if hotel:
-            hotel.update(novo_hotel)
-            return novo_hotel, 200
-
-        hoteis.append(novo_hotel)
-        return novo_hotel, 201
+        
+        hotel_encontrado = HotelModel.find_hotel(hotel_id)
+        if hotel_encontrado:
+            hotel_encontrado.update_hotel(**dados)
+            hotel_encontrado.save_hotel()
+            return hotel_encontrado.json(), 200
+        
+        hotel = HotelModel(hotel_id, **dados)
+        hotel.save_hotel()
+        return hotel.json(), 201
 
     def delete(self, hotel_id):
         exist_hotel = Hotel.find_hotel(hotel_id)
